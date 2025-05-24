@@ -33,8 +33,8 @@ pipeline {
         stage('Deploy') {
             when {
                 anyOf {
-                    branch 'dev'
                     branch 'main'
+                    branch 'dev'
                 }
             }
             steps {
