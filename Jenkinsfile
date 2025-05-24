@@ -1,7 +1,8 @@
 pipeline {
     agent any
     environment {
-        IMAGE_NAME = "madhusudhan143/devops-react"
+        IMAGE_NAME_PUBLIC  = "madhusudhan143/devops-react"
+        IMAGE_NAME_PRIVATE = "madhusudhan143/devops-react-private"
         DOCKERHUB_CREDENTIALS = credentials('dockerhub-creds')
     }
     stages {
@@ -11,25 +12,40 @@ pipeline {
                 git branch: "${env.BRANCH_NAME}", url: 'https://github.com/Madhusudhanhub/devops-build.git'
             }
         }
+
         stage('Build Docker Image') {
             steps {
                 script {
                     def tag = (env.BRANCH_NAME == "main") ? "prod" : "dev"
-                    sh "docker build -t ${IMAGE_NAME}:${tag} ."
+                    sh "docker build -t ${IMAGE_NAME_PUBLIC}:${tag} ."
                 }
             }
         }
-        stage('Push to Docker Hub') {
+
+        stage('Push to Docker Hub - Public') {
             steps {
                 script {
                     def tag = (env.BRANCH_NAME == "main") ? "prod" : "dev"
                     sh """
                         echo ${DOCKERHUB_CREDENTIALS_PSW} | docker login -u ${DOCKERHUB_CREDENTIALS_USR} --password-stdin
-                        docker push ${IMAGE_NAME}:${tag}
+                        docker push ${IMAGE_NAME_PUBLIC}:${tag}
                     """
                 }
             }
         }
+
+        stage('Push to Docker Hub - Private') {
+            steps {
+                script {
+                    def tag = (env.BRANCH_NAME == "main") ? "prod" : "dev"
+                    sh """
+                        docker tag ${IMAGE_NAME_PUBLIC}:${tag} ${IMAGE_NAME_PRIVATE}:${tag}
+                        docker push ${IMAGE_NAME_PRIVATE}:${tag}
+                    """
+                }
+            }
+        }
+
         stage('Deploy') {
             when {
                 anyOf {
@@ -47,4 +63,3 @@ pipeline {
         }
     }
 }
-
